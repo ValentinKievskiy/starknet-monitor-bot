@@ -11,6 +11,7 @@ from datetime import datetime
 TOKEN = os.getenv('BOT_TOKEN')
 MY_CHAT_ID = int(os.getenv('MY_CHAT_ID', 492327163))
 bot = telebot.TeleBot(TOKEN)
+client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 # Данные для слежки
 last_price = None
