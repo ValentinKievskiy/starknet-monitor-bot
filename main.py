@@ -7,8 +7,8 @@ import time
 from datetime import datetime
 
 # --- НАСТРОЙКИ ---
-TOKEN = 'ТВОЙ_ТОКЕН_ТЕЛЕГРАМ'
-MY_CHAT_ID = 123456789  # ВСТАВЬ СВОЙ ID СЮДА
+TOKEN = '8798082071:AAHmvsk9CTCjNsooxcP06djoIXfe80xC7UM'
+MY_CHAT_ID = 492327163
 bot = telebot.TeleBot(TOKEN)
 
 # Данные для слежки
