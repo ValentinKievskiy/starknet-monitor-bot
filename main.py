@@ -31,7 +31,7 @@ def get_strk_price():
     except:
         return None
 
-def ask_groq_ai(prompt, limit=150):
+def ask_groq_ai(prompt, limit=500):
     """Ответ от Директора через Groq"""
     try:
         completion = client.chat.completions.create(
