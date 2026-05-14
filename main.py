@@ -1,7 +1,7 @@
 import telebot
 import requests
 import random
-import g4f
+from groq import Groq
 import threading
 import time
 import os
