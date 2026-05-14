@@ -93,10 +93,18 @@ threading.Thread(target=monitor_engine, daemon=True).start()
 # --- ОБЫЧНОЕ ОБЩЕНИЕ ---
 @bot.message_handler(func=lambda m: True)
 def handle_chat(message):
-    is_crypto = any(word in message.text.lower() for word in ['strk', 'btc', 'eth', 'starknet'])
+    text = message.text.lower()
+    # Если спрашиваешь про Starknet или цену
+    if 'strk' in text or 'starknet' in text or 'цена' in text:
+        from main import get_strk_price # подтягиваем цену из твоей функции
+        p, _ = get_strk_price()
+        bot.reply_to(message, f"📊 Курс STRK сейчас: ${p}\n🚀 Разлок 13,000 монет — завтра, 15 мая!")
+        return
+
+    # Для остальных вопросов оставляем ИИ
+    is_crypto = any(word in text for word in ['btc', 'eth'])
     limit = 100 if is_crypto else 25
     response = ask_free_ai(message.text, limit=limit)
     bot.reply_to(message, response)
-
 if __name__ == "__main__":
     bot.infinity_polling()
