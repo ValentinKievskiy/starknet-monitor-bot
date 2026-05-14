@@ -7,8 +7,9 @@ import time
 from datetime import datetime
 
 # --- НАСТРОЙКИ ---
-TOKEN = '8798082071:AAHmvsk9CTCjNsooxcP06djoIXfe80xC7UM'
-MY_CHAT_ID = 492327163
+import os
+TOKEN = os.getenv('BOT_TOKEN')
+MY_CHAT_ID = int(os.getenv('MY_CHAT_ID', 492327163))
 bot = telebot.TeleBot(TOKEN)
 
 # Данные для слежки
