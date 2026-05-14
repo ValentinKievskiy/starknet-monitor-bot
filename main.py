@@ -8,42 +8,48 @@ import os
 from datetime import datetime
 
 # --- НАСТРОЙКИ ---
+# Убедись, что добавил BOT_TOKEN в настройки Render!
 TOKEN = os.getenv('BOT_TOKEN')
-MY_CHAT_ID = int(os.getenv('MY_CHAT_ID', 492327163))
+MY_CHAT_ID = int(os.getenv('MY_CHAT_ID', 505230353))
+
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 # Данные для слежки
 last_price = None
 last_week_price = None
-last_news_title = ""
 
 def get_aaa():
     length = random.randint(3, 7)
     return "".join(random.choice(['а', 'А']) for _ in range(length)) + "..."
 
 def get_strk_price():
-    """Функция получения цены Starknet"""
+    """Получение цены Starknet с CoinGecko"""
     try:
         res = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=starknet&vs_currencies=usd", timeout=10).json()
         return res['starknet']['usd']
     except:
         return None
 
-def ask_free_ai(prompt, limit=100):
+def ask_groq_ai(prompt, limit=150):
+    """Ответ от Директора через Groq"""
     try:
-        response = g4f.ChatCompletion.create(
-            model=g4f.models.gpt_35_turbo,
-            messages=[{"role": "system", "content": f"Ты Директор-Циник. Ответ до {limit} симв. В начале '{get_aaa()}'."},
-                      {"role": "user", "content": prompt}]
+        completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
+                {"role": "system", "content": f"Ты Директор-Циник. Ответ короткий, до {limit} симв. В начале всегда пиши '{get_aaa()}'."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens= limit // 2 
         )
-        return response[:limit]
-    except: 
-        return f"{get_aaa()} ИИ занят. Жди."
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(f"Ошибка Groq: {e}")
+        return f"{get_aaa()} Мозг перегрелся. Жди."
 
 # --- ФОНОВЫЙ МОНИТОРИНГ ---
 def monitor_engine():
-    global last_price, last_week_price, last_news_title
+    global last_price, last_week_price
     
     while True:
         try:
@@ -57,7 +63,7 @@ def monitor_engine():
                     diff = (price - last_price) / last_price
                     if abs(diff) >= 0.10:
                         trend = "ВЗЛЕТ" if diff > 0 else "ОБВАЛ"
-                        bot.send_message(MY_CHAT_ID, f"{aaa} STRK {trend} на {abs(diff)*100:.0f}%! Цена: ${price}. Твои 13k монет стоят ${price*13000:,.0f}.")
+                        bot.send_message(MY_CHAT_ID, f"{aaa} STRK {trend} на {abs(diff)*100:.0f}%! Цена: ${price}. Твои 13k стоят ${price*13000:,.0f}.")
                         last_price = price
 
                 if last_price is None: last_price = price
@@ -74,40 +80,36 @@ def monitor_engine():
                 bot.send_message(MY_CHAT_ID, f"{aaa} С днюхой, Валентин. Стань богаче.")
 
             # 4. РАЗЛОКИ (15-е число)
-            if now.day == 14 and now.hour == 12 and now.minute < 10:
-                bot.send_message(MY_CHAT_ID, f"{aaa} Завтра разлок 127M STRK. Готовь стаканы.")
-            
+            # Сегодня 14 мая, напоминание на 12:00 уже прошло, ждем завтра 08:00
             if now.day == 15 and now.hour == 8 and now.minute < 10:
-                bot.send_message(MY_CHAT_ID, f"{aaa} РАЗЛОК СЕГОДНЯ. Не спи.")
+                bot.send_message(MY_CHAT_ID, f"{aaa} РАЗЛОК 13 000 STRK СЕГОДНЯ. Не спи.")
 
         except Exception as e: 
             print(f"Ошибка монитора: {e}")
         
-        time.sleep(600) # Раз в 10 минут
+        time.sleep(600) # Проверка раз в 10 минут
 
 # Запуск мониторинга в отдельном потоке
 threading.Thread(target=monitor_engine, daemon=True).start()
 
-# --- ОБЫЧНОЕ ОБЩЕНИЕ ---
+# --- ОБЩЕНИЕ ---
 @bot.message_handler(func=lambda m: True)
 def handle_chat(message):
     text = message.text.lower()
     
-    # Прямой ответ по Starknet без ИИ
+    # Реакция на крипту
     if any(word in text for word in ['strk', 'starknet', 'цена', 'курс']):
         price = get_strk_price()
         if price:
             bot.reply_to(message, f"📊 Курс STRK: ${price}\n💰 Твои 13,000 монет: ${price*13000:,.2f}\n🚀 Разлок — завтра, 15 мая!")
         else:
-            bot.reply_to(message, "Не смог поймать цену, но разлок точно завтра (15 мая)!")
+            bot.reply_to(message, "Не смог поймать цену, но разлок точно завтра!")
         return
 
-    # Для остальных вопросов — ИИ
-    is_crypto = any(word in text for word in ['btc', 'eth'])
-    limit = 100 if is_crypto else 25
-    response = ask_free_ai(message.text, limit=limit)
+    # Остальное — через Groq
+    response = ask_groq_ai(message.text)
     bot.reply_to(message, response)
 
 if __name__ == "__main__":
-    print("Бот запущен...")
+    print("Директор запущен...")
     bot.infinity_polling()
